@@ -81,6 +81,8 @@ export interface ScheduleStop {
   order: number;
   code: number;
   name: string;
+  lat: number | null;
+  lon: number | null;
   arrival: ParsedArrival | null;
 }
 

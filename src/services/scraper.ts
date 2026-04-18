@@ -378,13 +378,19 @@ export async function fetchRouteSchedule(
   routeId: number,
   routeName: string
 ): Promise<RouteSchedule> {
-  const stops = await fetchStops(internalLineId, routeId);
+  const [stops, geoData] = await Promise.all([
+    fetchStops(internalLineId, routeId),
+    fetchRouteGeoData(internalLineId, routeId, routeName),
+  ]);
+
+  const coordsByCode = new Map(geoData.stops.map((s) => [s.code, { lat: s.lat, lon: s.lon }]));
 
   const timesPerStop = await Promise.all(
     stops.map((stop) => fetchTimes(stop.code, internalLineId, routeId))
   );
 
   const scheduleStops: ScheduleStop[] = stops.map((stop, i) => {
+    const coords = coordsByCode.get(stop.code) ?? null;
     const match = timesPerStop[i].find((t) => t.line === lineId) ?? null;
 
     let arrival: ScheduleStop["arrival"] = null;
@@ -397,7 +403,7 @@ export async function fetchRouteSchedule(
       }
     }
 
-    return { order: i, code: stop.code, name: stop.name, arrival };
+    return { order: i, code: stop.code, name: stop.name, lat: coords?.lat ?? null, lon: coords?.lon ?? null, arrival };
   });
 
   return { lineId, routeId, routeName, fetchedAt: new Date().toISOString(), stops: scheduleStops };

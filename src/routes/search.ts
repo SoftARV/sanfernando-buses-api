@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { fetchLines, searchStops } from "../services/scraper";
+import { fetchLines, fetchRoutes, searchStops } from "../services/scraper";
 
 const search = new Hono();
 
@@ -16,13 +16,19 @@ search.get("/", async (c) => {
   ]);
 
   const isNumeric = /^\d+$/.test(q);
-  const lines = allLines
-    .filter((l) =>
-      isNumeric
-        ? l.id === parseInt(q, 10)
-        : l.name.toLowerCase().includes(q.toLowerCase())
-    )
-    .map(({ id, name }) => ({ id, name }));
+  const matchedLines = allLines.filter((l) =>
+    isNumeric
+      ? l.id === parseInt(q, 10)
+      : l.name.toLowerCase().includes(q.toLowerCase())
+  );
+
+  const lines = await Promise.all(
+    matchedLines.map(async ({ id, name, internalId }) => ({
+      id,
+      name,
+      routes: await fetchRoutes(internalId),
+    }))
+  );
 
   return c.json({ lines, stops });
 });

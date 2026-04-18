@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import * as cheerio from "cheerio";
-import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, ScheduleStop, RouteSchedule } from "../types";
+import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, StopRoute, ScheduleStop, RouteSchedule } from "../types";
 import { Cache } from "./cache";
 
 const TTL_1HR = 60 * 60 * 1000;
@@ -300,7 +300,7 @@ export async function fetchVehiclesForStop(stopCode: number): Promise<StopVehicl
 
 // --- Nearby stops ---
 
-type StopCacheEntry = NearbyStop & { lineIds: number[] };
+type StopCacheEntry = NearbyStop;
 let allStopsCache: StopCacheEntry[] | null = null;
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -328,19 +328,21 @@ export async function fetchAllStopsWithCoords(): Promise<StopCacheEntry[]> {
     }))
   );
 
-  // Collect { stop, lineId } pairs across all routes, deduplicating stop codes
-  const stopMap = new Map<number, { name: string; lineIds: Set<number> }>();
+  // Collect route info per stop, deduplicating by stop code + route key
+  const stopMap = new Map<number, { name: string; routes: Map<string, StopRoute> }>();
 
   await Promise.all(
     routesByLine.flatMap(({ lineId, internalId, routes }) =>
       routes.map(async (route) => {
         const stops = await fetchStops(internalId, route.id);
         for (const stop of stops) {
+          const routeKey = `${lineId}:${route.id}`;
+          const routeEntry: StopRoute = { lineId, routeId: route.id, routeName: route.name };
           const entry = stopMap.get(stop.code);
           if (entry) {
-            entry.lineIds.add(lineId);
+            entry.routes.set(routeKey, routeEntry);
           } else {
-            stopMap.set(stop.code, { name: stop.name, lineIds: new Set([lineId]) });
+            stopMap.set(stop.code, { name: stop.name, routes: new Map([[routeKey, routeEntry]]) });
           }
         }
       })
@@ -362,7 +364,7 @@ export async function fetchAllStopsWithCoords(): Promise<StopCacheEntry[]> {
         lat: c.lat,
         lon: c.lon,
         distanceMeters: 0,
-        lineIds: Array.from(entry.lineIds).sort((a, b) => a - b),
+        routes: Array.from(entry.routes.values()).sort((a, b) => a.lineId - b.lineId || a.routeId - b.routeId),
       };
     })
     .filter((s): s is StopCacheEntry => s !== null);
@@ -404,9 +406,7 @@ export async function fetchRouteSchedule(
 export async function searchStops(query: string): Promise<NearbyStop[]> {
   const all = await fetchAllStopsWithCoords();
   const q = query.toLowerCase();
-  return all
-    .filter((s) => s.name.toLowerCase().includes(q))
-    .map(({ distanceMeters: _, ...stop }) => ({ ...stop, distanceMeters: 0 }));
+  return all.filter((s) => s.name.toLowerCase().includes(q));
 }
 
 export async function fetchNearbyStops(

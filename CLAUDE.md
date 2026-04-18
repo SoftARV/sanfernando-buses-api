@@ -34,7 +34,7 @@ The upstream site is a legacy ASP.NET WebForms app. Navigating it requires:
 - `src/services/scraper.ts` — all HTTP fetching and HTML parsing (cheerio). Single source of truth for upstream interactions.
 - `src/routes/lines.ts` — Hono route handlers for `/lines/*`; input validation only, delegates to scraper.
 - `src/routes/stops.ts` — Hono route handlers for `/stops/*`.
-- `src/types.ts` — shared interfaces (`BusLine`, `Route`, `Stop`, `BusTime`, `StopGeoPoint`, `RouteGeoData`, `Vehicle`, `StopVehicles`).
+- `src/types.ts` — shared interfaces (`BusLine`, `Route`, `Stop`, `BusTime`, `StopGeoPoint`, `RouteGeoData`, `Vehicle`, `StopVehicles`, `NearbyStop`, `StopRoute`).
 - `src/index.ts` — server entry point, route mounting, port config.
 
 ### Endpoints

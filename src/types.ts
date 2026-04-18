@@ -54,13 +54,19 @@ export interface StopVehicles {
   vehicles: Vehicle[];
 }
 
+export interface StopRoute {
+  lineId: number;
+  routeId: number;
+  routeName: string;
+}
+
 export interface NearbyStop {
   code: number;
   name: string;
   lat: number;
   lon: number;
   distanceMeters: number;
-  lineIds: number[];
+  routes: StopRoute[];
 }
 
 export type ArrivalType = "relative" | "absolute";

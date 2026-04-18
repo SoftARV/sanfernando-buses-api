@@ -98,3 +98,15 @@ export interface SearchResult {
   lines: Pick<BusLine, "id" | "name">[];
   stops: NearbyStop[];
 }
+
+export interface ShapePoint {
+  lat: number;
+  lon: number;
+}
+
+export interface RouteShape {
+  routeId: number;
+  routeName: string;
+  source: "osrm" | "stops";
+  points: ShapePoint[];
+}

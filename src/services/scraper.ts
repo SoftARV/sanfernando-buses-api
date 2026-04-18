@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import * as cheerio from "cheerio";
-import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, StopRoute, ScheduleStop, RouteSchedule } from "../types";
+import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, StopRoute, ScheduleStop, RouteSchedule, RouteShape, ShapePoint } from "../types";
 import { Cache } from "./cache";
 
 const TTL_1HR = 60 * 60 * 1000;
@@ -11,6 +11,7 @@ const routesCache = new Cache<number, Route[]>();
 const stopsCache = new Cache<string, Stop[]>();
 const geoDataCache = new Cache<string, RouteGeoData>();
 const timesCache = new Cache<string, BusTime[]>();
+const shapeCache = new Cache<string, RouteShape>();
 
 const HOST = "http://77.224.241.76/sanfernando/mobile";
 const SOAP_HOST = "http://77.224.241.76/sanfernando";
@@ -254,6 +255,43 @@ export async function fetchRouteGeoData(
 
   const result = { routeId, routeName, stops: geoStops };
   geoDataCache.set(key, result, TTL_1HR);
+  return result;
+}
+
+const OSRM_URL = "http://router.project-osrm.org/route/v1/driving";
+
+export async function fetchRouteShape(
+  internalLineId: number,
+  routeId: number,
+  routeName: string
+): Promise<RouteShape> {
+  const key = `${internalLineId}:${routeId}`;
+  const cached = shapeCache.get(key);
+  if (cached) return cached;
+
+  const geoData = await fetchRouteGeoData(internalLineId, routeId, routeName);
+  const stopPoints = geoData.stops.map(({ lat, lon }) => ({ lat, lon }));
+
+  if (stopPoints.length >= 2) {
+    try {
+      const coords = geoData.stops.map((s) => `${s.lon},${s.lat}`).join(";");
+      const response = await axios.get(`${OSRM_URL}/${coords}`, {
+        params: { overview: "full", geometries: "geojson" },
+        headers: HEADERS,
+      });
+
+      const coordinates = (response.data as any).routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      if (coordinates && coordinates.length > 0) {
+        const points: ShapePoint[] = coordinates.map(([lon, lat]) => ({ lat, lon }));
+        const result: RouteShape = { routeId, routeName, source: "osrm", points };
+        shapeCache.set(key, result, TTL_1HR);
+        return result;
+      }
+    } catch {}
+  }
+
+  const result: RouteShape = { routeId, routeName, source: "stops", points: stopPoints };
+  shapeCache.set(key, result, TTL_1HR);
   return result;
 }
 

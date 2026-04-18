@@ -46,6 +46,7 @@ The upstream site is a legacy ASP.NET WebForms app. Navigating it requires:
 | GET | `/lines/:id/routes/:routeId/stops` | Stops for a route. Accepts `?date=DD/MM/YYYY`. |
 | GET | `/lines/:id/routes/:routeId/stops/:stopCode/times` | Upcoming arrivals for a stop. Accepts `?date=DD/MM/YYYY`. |
 | GET | `/lines/:id/routes/:routeId/geodata` | Ordered stops with lat/lon for map rendering. Accepts `?date=DD/MM/YYYY`. |
+| GET | `/lines/:id/routes/:routeId/shape` | Road-following GPS path via OSRM. `source` is `"osrm"` (road-snapped polyline) or `"stops"` (stop-to-stop fallback if OSRM fails). Accepts `?date=DD/MM/YYYY`. |
 | GET | `/lines/:id/routes/:routeId/schedule` | Next arrival at every stop on the route in sequence, including `lat`/`lon` per stop. Use this as the single endpoint for full route map + arrival list. Arrival is `{ raw, type, minutes }` — `type` is `"relative"` or `"absolute"`. Accepts `?date=DD/MM/YYYY`. |
 | GET | `/stops/:stopCode/vehicles` | Live vehicle positions approaching a stop. Returns `[]` when no buses are running. |
 | GET | `/stops/nearby?lat=&lon=&radius=` | Stops within `radius` meters (default 500, max 5000) sorted by distance. First call is slow (~3s) while the stop cache warms; subsequent calls are instant. |

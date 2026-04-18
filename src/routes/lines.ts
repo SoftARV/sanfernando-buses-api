@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { fetchLines, fetchRoutes, fetchStops, fetchTimes, fetchRouteGeoData, fetchRouteSchedule } from "../services/scraper";
+import { fetchLines, fetchRoutes, fetchStops, fetchTimes, fetchRouteGeoData, fetchRouteSchedule, fetchRouteShape } from "../services/scraper";
 
 const lines = new Hono();
 
@@ -132,6 +132,30 @@ lines.get("/:id/routes/:routeId/schedule", async (c) => {
 
   const schedule = await fetchRouteSchedule(line.id, line.internalId, route.id, route.name);
   return c.json(schedule);
+});
+
+lines.get("/:id/routes/:routeId/shape", async (c) => {
+  const id = parseInt(c.req.param("id"), 10);
+  const routeId = parseInt(c.req.param("routeId"), 10);
+
+  if (isNaN(id)) return c.json({ error: "Invalid line id." }, 400);
+  if (isNaN(routeId)) return c.json({ error: "Invalid route id." }, 400);
+
+  const date = c.req.query("date");
+  if (date && !/^\d{2}\/\d{2}\/\d{4}$/.test(date)) {
+    return c.json({ error: "Invalid date format. Use DD/MM/YYYY." }, 400);
+  }
+
+  const allLines = await fetchLines(date);
+  const line = allLines.find((l) => l.id === id);
+  if (!line) return c.json({ error: `Line ${id} not found.` }, 404);
+
+  const routes = await fetchRoutes(line.internalId);
+  const route = routes.find((r) => r.id === routeId);
+  if (!route) return c.json({ error: `Route ${routeId} not found on line ${id}.` }, 404);
+
+  const shape = await fetchRouteShape(line.internalId, route.id, route.name);
+  return c.json(shape);
 });
 
 export default lines;

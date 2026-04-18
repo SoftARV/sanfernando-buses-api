@@ -49,6 +49,7 @@ The upstream site is a legacy ASP.NET WebForms app. Navigating it requires:
 | GET | `/lines/:id/routes/:routeId/schedule` | Next arrival at every stop on the route in sequence. Arrival is `{ raw, type, minutes }` — `type` is `"relative"` or `"absolute"`. Accepts `?date=DD/MM/YYYY`. |
 | GET | `/stops/:stopCode/vehicles` | Live vehicle positions approaching a stop. Returns `[]` when no buses are running. |
 | GET | `/stops/nearby?lat=&lon=&radius=` | Stops within `radius` meters (default 500, max 5000) sorted by distance. First call is slow (~3s) while the stop cache warms; subsequent calls are instant. |
+| GET | `/search?q=` | Search lines by number or name, and stops by name. Returns `{ lines, stops }`. First call slow if stop cache is cold. |
 
 ### Upstream URL reference
 

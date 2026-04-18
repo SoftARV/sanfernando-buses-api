@@ -85,3 +85,8 @@ export interface RouteSchedule {
   fetchedAt: string;
   stops: ScheduleStop[];
 }
+
+export interface SearchResult {
+  lines: Pick<BusLine, "id" | "name">[];
+  stops: NearbyStop[];
+}

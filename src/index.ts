@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { isAxiosError } from "axios";
 import lines from "./routes/lines";
 import stops from "./routes/stops";
+import search from "./routes/search";
 import { AppError } from "./utils/errors";
 
 const app = new Hono();
@@ -12,6 +13,7 @@ app.use("*", cors({ origin: "*", allowMethods: ["GET"] }));
 
 app.route("/lines", lines);
 app.route("/stops", stops);
+app.route("/search", search);
 
 app.notFound((c) => c.json({ error: "Not found." }, 404));
 

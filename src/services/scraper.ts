@@ -401,6 +401,14 @@ export async function fetchRouteSchedule(
   return { lineId, routeId, routeName, fetchedAt: new Date().toISOString(), stops: scheduleStops };
 }
 
+export async function searchStops(query: string): Promise<NearbyStop[]> {
+  const all = await fetchAllStopsWithCoords();
+  const q = query.toLowerCase();
+  return all
+    .filter((s) => s.name.toLowerCase().includes(q))
+    .map(({ distanceMeters: _, ...stop }) => ({ ...stop, distanceMeters: 0 }));
+}
+
 export async function fetchNearbyStops(
   lat: number,
   lon: number,

@@ -270,11 +270,20 @@ export async function fetchRouteShape(
   if (cached) return cached;
 
   const geoData = await fetchRouteGeoData(internalLineId, routeId, routeName);
-  const stopPoints = geoData.stops.map(({ lat, lon }) => ({ lat, lon }));
+
+  // If the route is circular (stops repeat on the return leg), only use the outbound half
+  const seen = new Set<number>();
+  const outboundStops = geoData.stops.filter((s) => {
+    if (seen.has(s.code)) return false;
+    seen.add(s.code);
+    return true;
+  });
+
+  const stopPoints = outboundStops.map(({ lat, lon }) => ({ lat, lon }));
 
   if (stopPoints.length >= 2) {
     try {
-      const coords = geoData.stops.map((s) => `${s.lon},${s.lat}`).join(";");
+      const coords = outboundStops.map((s) => `${s.lon},${s.lat}`).join(";");
       const response = await axios.get(`${OSRM_URL}/${coords}`, {
         params: { overview: "full", geometries: "geojson" },
         headers: HEADERS,

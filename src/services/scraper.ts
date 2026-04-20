@@ -350,7 +350,7 @@ export async function fetchVehiclesForStop(stopCode: number): Promise<StopVehicl
 type StopCacheEntry = NearbyStop;
 let allStopsCache: StopCacheEntry[] | null = null;
 
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -419,6 +419,12 @@ export async function fetchAllStopsWithCoords(): Promise<StopCacheEntry[]> {
   return allStopsCache;
 }
 
+export function parseArrival(raw: string): ParsedArrival {
+  const relMatch = raw.match(/^(\d+)min$/i);
+  if (relMatch) return { raw, type: "relative", minutes: parseInt(relMatch[1], 10) };
+  return { raw, type: "absolute", minutes: null };
+}
+
 export async function fetchRouteSchedule(
   lineId: number,
   internalLineId: number,
@@ -440,15 +446,7 @@ export async function fetchRouteSchedule(
     const coords = coordsByCode.get(stop.code) ?? null;
     const match = timesPerStop[i].find((t) => t.line === lineId) ?? null;
 
-    let arrival: ScheduleStop["arrival"] = null;
-    if (match) {
-      const relMatch = match.arrival.match(/^(\d+)min$/i);
-      if (relMatch) {
-        arrival = { raw: match.arrival, type: "relative", minutes: parseInt(relMatch[1], 10) };
-      } else {
-        arrival = { raw: match.arrival, type: "absolute", minutes: null };
-      }
-    }
+    const arrival: ScheduleStop["arrival"] = match ? parseArrival(match.arrival) : null;
 
     return { order: i, code: stop.code, name: stop.name, lat: coords?.lat ?? null, lon: coords?.lon ?? null, arrival };
   });

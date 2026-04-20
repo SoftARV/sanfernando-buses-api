@@ -67,6 +67,7 @@ export interface NearbyStop {
   lon: number;
   distanceMeters: number;
   routes: StopRoute[];
+  nextArrival?: ParsedArrival | null;
 }
 
 export type ArrivalType = "relative" | "absolute";

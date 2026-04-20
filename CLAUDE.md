@@ -50,7 +50,7 @@ The upstream site is a legacy ASP.NET WebForms app. Navigating it requires:
 | GET | `/lines/:id/routes/:routeId/schedule` | Next arrival at every stop on the route in sequence, including `lat`/`lon` per stop. Use this as the single endpoint for full route map + arrival list. Arrival is `{ raw, type, minutes }` — `type` is `"relative"` or `"absolute"`. Accepts `?date=DD/MM/YYYY`. |
 | GET | `/stops/:stopCode/vehicles` | Live vehicle positions approaching a stop. Returns `[]` when no buses are running. |
 | GET | `/stops/nearby?lat=&lon=&radius=` | Stops within `radius` meters (default 500, max 5000) sorted by distance. First call is slow (~3s) while the stop cache warms; subsequent calls are instant. |
-| GET | `/search?q=` | Search lines by number or name, and stops by name. Returns `{ lines: [{ id, name, routes }], stops }`. First call slow if stop cache is cold. |
+| GET | `/search?q=` | Search lines by number or name, and stops by name. Returns `{ lines: [{ id, name, routes }], stops }`. Stops include `nextArrival: { raw, type, minutes } \| null` (soonest bus across all routes). Accepts `?lat=&lon=` to populate `distanceMeters` on each stop. First call slow if stop cache is cold. |
 
 ### Upstream URL reference
 
@@ -66,3 +66,19 @@ The upstream site is a legacy ASP.NET WebForms app. Navigating it requires:
 Used for stop coordinates. `GetParada(iIdParada)` returns `dLat`/`dLong` for a single stop. Other methods exist (`GetTrayectoGeoPoints`, `GetParadasTrayecto`) but return empty data on this server. All SOAP calls use `Content-Type: text/xml` POST with `SOAPAction` header.
 
 `SynopticState.asmx` — `getVehiculos(iIdParada)` returns live vehicle positions (`JSonPosicion` elements) with `dLat`/`dLon`, `velocidad`, `distanciaParada`, `retraso`, `destino`. Returns empty when no buses are running.
+
+### CTAN GTFS feed (interurban lines)
+
+The Consorcio Metropolitano de Transportes de la Bahía de Cádiz (CMTBC) publishes a unified GTFS feed for all Andalusian transport consortiums:
+
+```
+https://api.ctan.es/v1/datos/UNIFICADO/gtfs.zip
+```
+
+- Updates daily. Agency ID in the feed: `CMTBC`.
+- Contains interurban lines passing through San Fernando: M-010, M-011 (Cádiz↔San Fernando), M-120 (Chiclana↔San Fernando), M-130 (San Fernando↔Campus Universitario), and others.
+- **Does NOT contain the urban Línea 1 / Línea 2 routes** — those are operated separately and are only available via the ASP.NET scraper.
+- GTFS stop IDs use format `2_<n>` (e.g. `2_49` = Bahía Sur). These do NOT match the ASP.NET stop codes (e.g. `2101`), but coordinates match within ~10m.
+- `shapes.txt` in the ZIP has accurate GPS polylines for each interurban route (`shape_id` format: `2_7_I` / `2_7_V` for inbound/outbound).
+- Lookup path: `routes.txt` (route_id) → `trips.txt` (shape_id) → `shapes.txt` (ordered lat/lon points).
+- API documentation: https://api.ctan.es/doc/

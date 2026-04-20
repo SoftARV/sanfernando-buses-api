@@ -1,6 +1,6 @@
 import axios, { AxiosError } from "axios";
 import * as cheerio from "cheerio";
-import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, StopRoute, ScheduleStop, RouteSchedule, RouteShape, ShapePoint } from "../types";
+import type { BusLine, Route, Stop, BusTime, StopGeoPoint, RouteGeoData, Vehicle, StopVehicles, NearbyStop, StopRoute, ScheduleStop, RouteSchedule, RouteShape, ShapePoint, ParsedArrival } from "../types";
 import { Cache } from "./cache";
 
 const TTL_1HR = 60 * 60 * 1000;

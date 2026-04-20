@@ -52,7 +52,7 @@ search.get("/", async (c) => {
 
         const relative = arrivals
           .filter((a): a is ParsedArrival => a !== null && a.type === "relative" && a.minutes !== null)
-          .sort((a, b) => (a.minutes as number) - (b.minutes as number));
+          .sort((a: ParsedArrival, b: ParsedArrival) => (a.minutes as number) - (b.minutes as number));
 
         const nextArrival: ParsedArrival | null =
           relative[0] ?? arrivals.find((a): a is ParsedArrival => a !== null) ?? null;

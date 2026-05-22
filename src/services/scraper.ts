@@ -349,6 +349,7 @@ export async function fetchVehiclesForStop(stopCode: number): Promise<StopVehicl
 
 type StopCacheEntry = NearbyStop;
 let allStopsCache: StopCacheEntry[] | null = null;
+let allStopsCachePromise: Promise<StopCacheEntry[]> | null = null;
 
 export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
@@ -363,6 +364,12 @@ export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: 
 
 export async function fetchAllStopsWithCoords(): Promise<StopCacheEntry[]> {
   if (allStopsCache) return allStopsCache;
+  if (allStopsCachePromise) return allStopsCachePromise;
+  allStopsCachePromise = _buildAllStopsCache().finally(() => { allStopsCachePromise = null; });
+  return allStopsCachePromise;
+}
+
+async function _buildAllStopsCache(): Promise<StopCacheEntry[]> {
 
   const lines = await fetchLines();
 

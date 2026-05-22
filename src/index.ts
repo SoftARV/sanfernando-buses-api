@@ -6,6 +6,7 @@ import lines from "./routes/lines";
 import stops from "./routes/stops";
 import search from "./routes/search";
 import { AppError } from "./utils/errors";
+import { fetchAllStopsWithCoords } from "./services/scraper";
 
 const app = new Hono();
 
@@ -37,4 +38,5 @@ const PORT = Number(process.env.PORT) || 3000;
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  fetchAllStopsWithCoords().catch((err) => console.error("Stop cache warm-up failed:", err));
 });

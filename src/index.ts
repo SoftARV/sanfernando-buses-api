@@ -7,10 +7,12 @@ import stops from "./routes/stops";
 import search from "./routes/search";
 import { AppError } from "./utils/errors";
 import { fetchAllStopsWithCoords } from "./services/scraper";
+import { requestLogger } from "./middleware/logger";
 
 const app = new Hono();
 
 app.use("*", cors({ origin: "*", allowMethods: ["GET"] }));
+app.use("*", requestLogger());
 
 app.route("/lines", lines);
 app.route("/stops", stops);
@@ -30,13 +32,20 @@ app.onError((err, c) => {
     return c.json({ error: "Upstream returned an error." }, 502);
   }
 
-  console.error(err);
+  console.log(JSON.stringify({
+    level: "error",
+    time: new Date().toISOString(),
+    error: err.message,
+    stack: err.stack,
+  }));
   return c.json({ error: "Internal server error." }, 500);
 });
 
 const PORT = Number(process.env.PORT) || 3000;
 
 serve({ fetch: app.fetch, port: PORT }, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  fetchAllStopsWithCoords().catch((err) => console.error("Stop cache warm-up failed:", err));
+  console.log(JSON.stringify({ level: "info", time: new Date().toISOString(), msg: `Server running on port ${PORT}` }));
+  fetchAllStopsWithCoords().catch((err) =>
+    console.log(JSON.stringify({ level: "error", time: new Date().toISOString(), msg: "Stop cache warm-up failed", error: (err as Error).message }))
+  );
 });

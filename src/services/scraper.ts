@@ -100,16 +100,34 @@ export async function fetchLines(date?: string): Promise<BusLine[]> {
     }
   });
 
-  const internalIds = await Promise.all(
+  // Resolve internal IDs independently: one line failing to resolve (e.g. a new
+  // seasonal line, or a transient upstream error) must not take down the whole
+  // endpoint. Keep the lines that resolve and log the ones that don't.
+  const settled = await Promise.allSettled(
     rawLines.map((line) => resolveInternalId(line.buttonName, hiddenFields, t4))
   );
 
-  const result = rawLines.map((line, i) => ({
-    id: line.id,
-    internalId: internalIds[i],
-    name: line.name,
-  }));
-  linesCache.set(t4, result, TTL_1HR);
+  const result: BusLine[] = [];
+  rawLines.forEach((line, i) => {
+    const outcome = settled[i];
+    if (outcome.status === "fulfilled") {
+      result.push({ id: line.id, internalId: outcome.value, name: line.name });
+    } else {
+      console.log(JSON.stringify({
+        level: "warn",
+        time: new Date().toISOString(),
+        msg: "Failed to resolve internal ID for line",
+        lineId: line.id,
+        lineName: line.name,
+        error: (outcome.reason as Error)?.message,
+      }));
+    }
+  });
+
+  // If some lines dropped out, cache briefly so a recovered upstream is picked
+  // up soon instead of being masked for a full hour.
+  const complete = result.length === rawLines.length;
+  linesCache.set(t4, result, complete ? TTL_1HR : TTL_30S);
   return result;
 }
 
@@ -196,8 +214,11 @@ export async function fetchTimes(
     const destination = cells.eq(1).text().trim();
     const arrival = cells.eq(2).text().trim();
 
+    // Keep every row that has a line number and an arrival. The upstream LCD
+    // panel sometimes leaves the destination cell blank (seen on imminent
+    // departures) — requiring a destination here silently drops valid arrivals.
     const line = parseInt(lineText, 10);
-    if (!isNaN(line) && destination && arrival) {
+    if (!isNaN(line) && arrival) {
       times.push({ line, destination, arrival });
     }
   });
@@ -373,13 +394,17 @@ async function _buildAllStopsCache(): Promise<StopCacheEntry[]> {
 
   const lines = await fetchLines();
 
-  // Fetch all routes for all lines in parallel
+  // Fetch all routes for all lines in parallel. A single line failing here must
+  // not abort the whole cache build — degrade it to zero routes and log.
   const routesByLine = await Promise.all(
-    lines.map(async (line) => ({
-      lineId: line.id,
-      internalId: line.internalId,
-      routes: await fetchRoutes(line.internalId),
-    }))
+    lines.map(async (line) => {
+      try {
+        return { lineId: line.id, internalId: line.internalId, routes: await fetchRoutes(line.internalId) };
+      } catch (err) {
+        console.log(JSON.stringify({ level: "warn", time: new Date().toISOString(), msg: "Stop cache: failed to fetch routes for line", lineId: line.id, error: (err as Error).message }));
+        return { lineId: line.id, internalId: line.internalId, routes: [] as Route[] };
+      }
+    })
   );
 
   // Collect route info per stop, deduplicating by stop code + route key
@@ -388,7 +413,13 @@ async function _buildAllStopsCache(): Promise<StopCacheEntry[]> {
   await Promise.all(
     routesByLine.flatMap(({ lineId, internalId, routes }) =>
       routes.map(async (route) => {
-        const stops = await fetchStops(internalId, route.id);
+        let stops: Stop[];
+        try {
+          stops = await fetchStops(internalId, route.id);
+        } catch (err) {
+          console.log(JSON.stringify({ level: "warn", time: new Date().toISOString(), msg: "Stop cache: failed to fetch stops for route", lineId, routeId: route.id, error: (err as Error).message }));
+          return;
+        }
         for (const stop of stops) {
           const routeKey = `${lineId}:${route.id}`;
           const routeEntry: StopRoute = { lineId, routeId: route.id, routeName: route.name };

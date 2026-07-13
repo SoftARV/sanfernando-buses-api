@@ -1,0 +1,33 @@
+name: Upstream smoke test
+
+# Drift detector for the legacy ASP.NET upstream. The site never errors when it
+# changes its markup — it returns a healthy 200 our selectors no longer match —
+# so we run the real scraper end-to-end and fail the job when a HARD check parses
+# zero data (see src/smoke.ts). A red run == the scraper needs attention.
+#
+# Scheduled + manual only (not on push/PR): a green build shouldn't depend on a
+# third-party server being reachable at commit time.
+
+on:
+  schedule:
+    # 08:00 UTC daily (~10:00 Europe/Madrid in summer) — during service hours so
+    # the SOFT arrivals check has live data in the logs.
+    - cron: "0 8 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - name: Run upstream smoke test
+        run: npm run smoke

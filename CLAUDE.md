@@ -8,9 +8,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # start server with hot reload (tsx watch)
 npm run build    # compile TypeScript to dist/
 npm start        # run compiled output
+npm run smoke    # run the upstream drift detector against the live site
 ```
 
-No test runner is configured yet.
+No unit test runner is configured. `npm run smoke` is an end-to-end check against the live upstream — see [Monitoring / drift detection](#monitoring--drift-detection).
+
+## Monitoring / drift detection
+
+The upstream is a legacy ASP.NET site whose markup can change at any time (e.g. seasonal lines like the summer beach line 26). It never returns an error when this happens — it returns a healthy `200` that the scraper's selectors no longer match. The signal to watch for is therefore **"200 OK but 0 rows parsed"**.
+
+- `src/smoke.ts` (`npm run smoke`) runs the **real scraper** end-to-end — not a parallel copy of the parsing — and asserts each step extracts data. IDs are discovered dynamically (first line → its first route → its first stop), so it adapts automatically as lines come and go.
+- Checks are **HARD** (must have data: lines, routes, stops, coordinates, stop cache) or **SOFT** (legitimately empty sometimes: arrivals outside service hours, live vehicles since upstream GPS is dead). Exit code is `1` if any HARD check fails or throws, else `0` — so it can gate CI/cron.
+- `.github/workflows/smoke.yml` runs it **daily at 08:00 UTC** plus on-demand via `workflow_dispatch`, and the job goes red on drift. It is scheduled/manual only (not on push/PR) so a green build never depends on the third-party server being reachable at commit time. Note: `schedule` and `workflow_dispatch` only fire from the default branch.
+
+When a HARD check fails it almost always means a cheerio selector in `src/services/scraper.ts` no longer matches the upstream HTML. Fetch the relevant page (see [Upstream URL reference](#upstream-url-reference)) and re-derive the selector for that step.
 
 ## Architecture
 

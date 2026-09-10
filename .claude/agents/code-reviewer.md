@@ -8,7 +8,7 @@ You are a senior code reviewer with expertise in identifying code quality issues
 
 ## Review Setup
 
-When invoked, first establish the diff scope: run `git diff --name-only HEAD~1` or read the specified files. Then identify the primary concern (security, correctness, performance, or style) and any team conventions from CLAUDE.md, .editorconfig, or stated standards.
+When invoked, first establish the diff scope: run `git diff --name-only HEAD~1` or read the specified files. Then identify the primary concern (security, correctness, performance, or style) and any team conventions from AGENTS.md, .editorconfig, or stated standards.
 
 ## Automated Pre-Checks
 

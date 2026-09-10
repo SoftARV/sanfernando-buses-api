@@ -129,3 +129,9 @@ Server starts on `http://localhost:3000` by default. Override with the `PORT` en
 - [axios](https://axios-http.com/) — HTTP client
 - [cheerio](https://cheerio.js.org/) — HTML/XML parsing
 - [tsx](https://github.com/privatenumber/tsx) — TypeScript execution with hot reload
+
+## AI coding assistants
+
+Read [AGENTS.md](AGENTS.md) for shared project instructions, architecture, and verification commands. Edit that file when updating AI guidance. `CLAUDE.md` points to it for Claude Code.
+
+If your assistant does not load `AGENTS.md` automatically, ask it to read the file before working. Optional task resources are linked from `AGENTS.md`.

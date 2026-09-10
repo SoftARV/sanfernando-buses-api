@@ -101,3 +101,20 @@ These existing resources are Markdown files any assistant can read. Use only the
 - For backend architecture or API design, read [.claude/agents/backend-architect.md](.claude/agents/backend-architect.md).
 - For code reviews, read [.claude/agents/code-reviewer.md](.claude/agents/code-reviewer.md).
 - For backend implementation, security, or performance work, read [.claude/skills/senior-backend/SKILL.md](.claude/skills/senior-backend/SKILL.md). Resolve its script and reference paths relative to that skill directory.
+
+## Agent skills
+
+### Issue tracker
+
+Use GitHub Issues in `SoftARV/sanfernando-buses-api`.
+Read `docs/agents/issue-tracker.md` before issue operations.
+
+### Triage labels
+
+Use the five default triage labels.
+Read `docs/agents/triage-labels.md` before triaging issues.
+
+### Domain docs
+
+Use a single-context layout: root `CONTEXT.md` and `docs/adr/`.
+Read `docs/agents/domain.md` before exploring domain concepts.

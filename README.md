@@ -123,6 +123,42 @@ npm start         # run compiled output
 
 Server starts on `http://localhost:3000` by default. Override with the `PORT` environment variable.
 
+## Production monitoring
+
+`npm run monitor` checks the Railway production API. Override `API_BASE_URL`
+to check another deployment. Run `npm run test:monitor` for offline checks.
+
+The monitor runs only from 06:45 (inclusive) to 22:30 (exclusive) every day
+in `Europe/Madrid`, with daylight-saving changes handled automatically.
+Outside that window it exits successfully without making requests.
+
+It discovers the first route on each of lines 1 and 2 and samples the first
+and middle stops. HTTP failures, invalid responses, missing lines/routes/stops,
+or empty arrivals at every sampled stop trigger up to two retries, one minute
+apart. One empty stop is allowed. A persistent failure exits with status 1.
+This detects widespread failures; it does not prove every stop is healthy.
+
+On persistent failures with discovered stops, the monitor inspects the matching
+upstream pages and logs timestamps, URLs, arrival counts, and errors:
+
+- `upstream-rows-present`: upstream has table rows; investigate production or parsing.
+- `upstream-empty`: the expected table exists but has no data rows.
+- `upstream-markup-missing`: the expected table is absent; inspect for markup changes or an error page.
+- `upstream-request-failed`: upstream could not be fetched successfully.
+
+These are diagnostic clues from a later request, not proof of the original cause.
+If discovery itself fails, the production error is logged without a stop comparison.
+
+`.github/workflows/monitor.yml` schedules the check every 15 minutes and supports
+manual runs. GitHub can delay scheduled runs, so this is best-effort monitoring.
+The workflow must be on the default branch to run on schedule.
+Enable GitHub Actions email or web notifications, optionally for failed workflows
+only. Scheduled-run notifications go to the user who last changed the cron;
+this setup does not add an email service or change account notification settings.
+See [GitHub workflow notifications](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs).
+
+The daily `npm run smoke` workflow separately checks the scraper against upstream.
+
 ## Tech stack
 
 - [Hono](https://hono.dev/) — lightweight TypeScript web framework

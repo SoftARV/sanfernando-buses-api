@@ -7,7 +7,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "smoke": "tsx src/smoke.ts"
+    "smoke": "tsx src/smoke.ts",
+    "monitor": "node scripts/monitor.mjs",
+    "test:monitor": "node --test scripts/monitor.test.mjs"
   },
   "keywords": [],
   "author": "",

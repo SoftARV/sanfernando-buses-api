@@ -9,11 +9,19 @@ npm run dev      # start server with hot reload (tsx watch)
 npm run build    # compile TypeScript to dist/
 npm start        # run compiled output
 npm run smoke    # run the upstream drift detector against the live site
+npm run monitor  # check production arrivals during Madrid service hours
+npm run test:monitor # run offline monitor regression checks
 ```
 
-No unit test runner is configured. `npm run smoke` is an end-to-end check against the live upstream — see [Monitoring / drift detection](#monitoring--drift-detection).
+`npm run test:monitor` uses Node's built-in test runner for the production monitor. `npm run smoke` is an end-to-end check against the live upstream — see [Monitoring / drift detection](#monitoring--drift-detection).
 
 ## Monitoring / drift detection
+
+For production arrival failures, run `npm run monitor` and read the production
+monitoring section in `README.md`. The separate production workflow runs every
+15 minutes on a best-effort schedule, checks 06:45–22:30 Europe/Madrid, and
+retries failures twice before exiting with status 1. Run `npm run test:monitor`
+when changing the monitor. This is separate from the upstream smoke check below.
 
 The upstream is a legacy ASP.NET site whose markup can change at any time (e.g. seasonal lines like the summer beach line 26). It never returns an error when this happens — it returns a healthy `200` that the scraper's selectors no longer match. The signal to watch for is therefore **"200 OK but 0 rows parsed"**.
 
